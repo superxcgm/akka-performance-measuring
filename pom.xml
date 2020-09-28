@@ -2,8 +2,8 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>hello-akka-java</groupId>
-    <artifactId>app</artifactId>
+    <groupId>com.thoughtworks.hpc</groupId>
+    <artifactId>akka-performance-measuring</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -54,7 +54,7 @@
                     <arguments>
                         <argument>-classpath</argument>
                         <classpath />
-                        <argument>com.example.AkkaQuickstart</argument>
+                        <argument>com.thoughtworks.hpc.akka.performance.measuring.AppMain</argument>
                     </arguments>
                 </configuration>
             </plugin>
