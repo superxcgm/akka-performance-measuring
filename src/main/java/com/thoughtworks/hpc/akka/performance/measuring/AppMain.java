@@ -6,10 +6,12 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 
 public class AppMain {
-    public static void main(String[] notUsed) {
+    public static void main(String[] notUsed) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
         ActorSystem<RootActor.Command> system = ActorSystem.create(RootActor.create(), "akka-performance-measuring");
+        int n;
+        CountDownLatch finish;
 
         while (true) {
             System.out.print("> ");
@@ -31,17 +33,18 @@ public class AppMain {
                     break;
                 case "enqueueing":
                     // enqueueing n
-                    int n = Integer.parseInt(args[1]);
+                    n = Integer.parseInt(args[1]);
 
-                    CountDownLatch finish = new CountDownLatch(1);
-                    RootActor.HandleEnqueueing handleEnqueueing = new RootActor.HandleEnqueueing(n, finish);
-                    system.tell(handleEnqueueing);
-                    try {
-                        finish.await();
-                    } catch (InterruptedException e) {
-                        system.log().error(e.toString());
-                    }
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandleEnqueueing(n, finish));
+                    finish.await();
                     break;
+                case "dequeueing":
+                    // enqueueing n
+                    n = Integer.parseInt(args[1]);
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandleDequeueing(n, finish));
+                    finish.await();
                 case "n":
                     System.out.println("hello world");
                     break;
