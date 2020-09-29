@@ -67,6 +67,11 @@ public class AppMain {
                     system.tell(new RootActor.HandleMultiProducerSending(n, finish));
                     finish.await();
                     break;
+                case "max-throughput":
+                    n = Integer.parseInt(args[1]);
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandleMaxThroughput(n, finish));
+                    finish.await();
             }
         }
     }

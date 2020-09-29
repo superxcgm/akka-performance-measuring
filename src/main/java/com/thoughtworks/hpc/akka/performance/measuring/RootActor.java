@@ -52,6 +52,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandleMaxThroughput implements Command {
+        private final int n;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -69,14 +75,57 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 .onMessage(HandleInitiation.class, this::onHandleInitiation)
                 .onMessage(HandleMultiProducerSending.class, this::onHandleMultiProducerSending)
                 .onMessage(HandleSingleProducerSending.class, this::onHandleSingleProducerSending)
+                .onMessage(HandleMaxThroughput.class, this::onHandleMaxThroughput)
                 .build();
+    }
+
+    private Behavior<Command> onHandleMaxThroughput(HandleMaxThroughput handleMaxThroughput) throws BrokenBarrierException, InterruptedException {
+        int parallelism = 10;
+        int n = roundToParallelism(handleMaxThroughput.n, parallelism);
+        CountDownLatch finishLatch = new CountDownLatch(parallelism);
+
+        CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
+        ArrayList<Thread> threads = new ArrayList<>(parallelism);
+        CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
+        int times = n / parallelism;
+        for (int i = 0; i < parallelism; i++) {
+            ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, times));
+            Thread thread = new Thread(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    logger.error(e.toString());
+                }
+                for (int j = 0; j < times; j++) {
+                    actor.tell(emptyMessage);
+                }
+            });
+            thread.start();
+            threads.add(thread);
+        }
+
+        long start = System.nanoTime();
+        barrier.await();
+        finishLatch.await();
+        long spentTime = System.nanoTime() - start;
+
+        System.out.println("Max throughput:");
+        System.out.printf("\t%d ops\n", n);
+        System.out.printf("\t%d ns\n", spentTime);
+        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+        handleMaxThroughput.finish.countDown();
+        return this;
+    }
+
+    private int roundToParallelism(int n, int parallelism) {
+        return (n / parallelism) * parallelism;
     }
 
     private Behavior<Command> onHandleMultiProducerSending(HandleMultiProducerSending handleMultiProducerSending) throws BrokenBarrierException, InterruptedException {
         CountDownLatch finishLatch = new CountDownLatch(1);
-        ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, handleMultiProducerSending.n));
-
         int parallelism = 10;
+        int n = roundToParallelism(handleMultiProducerSending.n, parallelism);
+        ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, n));
         CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
         List<Thread> threads = new ArrayList<>(parallelism);
         for (int i = 0; i < parallelism; i++) {
@@ -86,9 +135,9 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 } catch (Exception e) {
                     logger.error(e.toString());
                 }
-                int messageCount = handleMultiProducerSending.n / parallelism;
+                int messageCount = n / parallelism;
                 CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
-                for(int i1 = 0; i1 < messageCount; i1++) {
+                for (int i1 = 0; i1 < messageCount; i1++) {
                     actor.tell(emptyMessage);
                 }
             });
@@ -102,9 +151,9 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         long spentTime = System.nanoTime() - start;
 
         System.out.println("Multi-producer sending:");
-        System.out.printf("\t%d ops\n", handleMultiProducerSending.n);
+        System.out.printf("\t%d ops\n", n);
         System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", handleMultiProducerSending.n * 1000_000_000L / spentTime);
+        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
         handleMultiProducerSending.finish.countDown();
         return this;
     }
