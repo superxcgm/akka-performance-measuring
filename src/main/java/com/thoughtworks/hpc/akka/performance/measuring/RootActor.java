@@ -9,6 +9,8 @@ import akka.actor.typed.javadsl.Receive;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 public class RootActor extends AbstractBehavior<RootActor.Command> {
@@ -30,6 +32,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandleInitiation implements Command {
+        private final int n;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -44,7 +52,31 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         return newReceiveBuilder()
                 .onMessage(HandleEnqueueing.class, this::onHandleEnqueueing)
                 .onMessage(HandleDequeueing.class, this::onHandleDequeueing)
+                .onMessage(HandleInitiation.class, this::onHandleInitiation)
                 .build();
+    }
+
+    private Behavior<Command> onHandleInitiation(HandleInitiation handleInitiation) {
+        List<ActorRef<MinimalActor.Command>> actors = new ArrayList<>(handleInitiation.n);
+
+        long start = System.nanoTime();
+        for (int i = 0; i < handleInitiation.n; i++) {
+            ActorRef<MinimalActor.Command> actorRef = getContext().spawnAnonymous(MinimalActor.create());
+            actors.add(actorRef);
+        }
+        long spentTime = System.nanoTime() - start;
+
+        // tear down
+        for (ActorRef<MinimalActor.Command> actor : actors) {
+            getContext().stop(actor);
+        }
+
+        System.out.println("Initiation:");
+        System.out.printf("\t%d ops\n", handleInitiation.n);
+        System.out.printf("\t%d ns\n", spentTime);
+        System.out.printf("\t%d ops/s\n", handleInitiation.n * 1000_000_000L / spentTime);
+        handleInitiation.finish.countDown();
+        return this;
     }
 
     private Behavior<Command> onHandleDequeueing(HandleDequeueing handleDequeueing) throws InterruptedException {

@@ -49,6 +49,12 @@ public class AppMain {
                     system.tell(new RootActor.HandleDequeueing(n, finish));
                     finish.await();
                     break;
+                case "initiation":
+                    n = Integer.parseInt(args[1]);
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandleInitiation(n, finish));
+                    finish.await();
+                    break;
             }
         }
     }
