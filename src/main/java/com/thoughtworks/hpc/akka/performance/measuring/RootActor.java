@@ -85,7 +85,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         startLatch.countDown();
         finishLatch.await();
 
-        System.out.println("Queueing:");
+        System.out.println("Enqueueing:");
         System.out.printf("\t%d ops\n", handleEnqueueing.n);
         System.out.printf("\t%d ns\n", spentTime);
         System.out.printf("\t%d ops/s\n", handleEnqueueing.n * 1000_000_000L / spentTime);

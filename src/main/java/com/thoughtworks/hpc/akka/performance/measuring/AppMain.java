@@ -31,6 +31,9 @@ public class AppMain {
                 case "quit":
                     System.exit(0);
                     break;
+                case "n":
+                    System.out.println("hello world");
+                    break;
                 case "enqueueing":
                     // enqueueing n
                     n = Integer.parseInt(args[1]);
@@ -45,8 +48,6 @@ public class AppMain {
                     finish = new CountDownLatch(1);
                     system.tell(new RootActor.HandleDequeueing(n, finish));
                     finish.await();
-                case "n":
-                    System.out.println("hello world");
                     break;
             }
         }

@@ -13,7 +13,8 @@ public class BlockableCountActor extends AbstractBehavior<BlockableCountActor.Co
     public interface Command {
     }
 
-    public static class EmptyMessage implements Command{}
+    public static class EmptyMessage implements Command {
+    }
 
     public static Behavior<Command> create(CountDownLatch startLatch, CountDownLatch finishLatch, int n) {
         return Behaviors.setup(context -> new BlockableCountActor(context, startLatch, finishLatch, n));
@@ -40,13 +41,9 @@ public class BlockableCountActor extends AbstractBehavior<BlockableCountActor.Co
                 .build();
     }
 
-    private Behavior<Command> onEmptyMessage(EmptyMessage msg) {
+    private Behavior<Command> onEmptyMessage(EmptyMessage msg) throws InterruptedException {
         if (blocked) {
-            try {
-                startLatch.await();
-            } catch (InterruptedException e) {
-                logger.warn(e.toString());
-            }
+            startLatch.await();
             blocked = false;
         } else {
             i--;
