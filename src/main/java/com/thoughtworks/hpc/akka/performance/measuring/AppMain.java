@@ -12,6 +12,7 @@ public class AppMain {
         ActorSystem<RootActor.Command> system = ActorSystem.create(RootActor.create(), "akka-performance-measuring");
         int n;
         CountDownLatch finish;
+        int parallelism;
 
         while (true) {
             System.out.print("> ");
@@ -62,15 +63,25 @@ public class AppMain {
                     finish.await();
                     break;
                 case "multi-producer-sending":
+                    // multi-producer-sending n [p]
                     n = Integer.parseInt(args[1]);
+                    parallelism = 10;
+                    if (args.length > 2) {
+                        parallelism = Integer.parseInt(args[2]);
+                    }
                     finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleMultiProducerSending(n, finish));
+                    system.tell(new RootActor.HandleMultiProducerSending(n, parallelism, finish));
                     finish.await();
                     break;
                 case "max-throughput":
+                    // max-throughput n [p]
                     n = Integer.parseInt(args[1]);
+                    parallelism = 10;
+                    if (args.length > 2) {
+                        parallelism = Integer.parseInt(args[2]);
+                    }
                     finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleMaxThroughput(n, finish));
+                    system.tell(new RootActor.HandleMaxThroughput(n, parallelism, finish));
                     finish.await();
             }
         }

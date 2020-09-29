@@ -49,12 +49,14 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
     @AllArgsConstructor
     public static class HandleMultiProducerSending implements Command {
         private final int n;
+        private final int parallelism;
         private final CountDownLatch finish;
     }
 
     @AllArgsConstructor
     public static class HandleMaxThroughput implements Command {
         private final int n;
+        private final int parallelism;
         private final CountDownLatch finish;
     }
 
@@ -80,7 +82,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
     }
 
     private Behavior<Command> onHandleMaxThroughput(HandleMaxThroughput handleMaxThroughput) throws BrokenBarrierException, InterruptedException {
-        int parallelism = 10;
+        int parallelism = handleMaxThroughput.parallelism;
         int n = roundToParallelism(handleMaxThroughput.n, parallelism);
         CountDownLatch finishLatch = new CountDownLatch(parallelism);
 
@@ -123,7 +125,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
 
     private Behavior<Command> onHandleMultiProducerSending(HandleMultiProducerSending handleMultiProducerSending) throws BrokenBarrierException, InterruptedException {
         CountDownLatch finishLatch = new CountDownLatch(1);
-        int parallelism = 10;
+        int parallelism = handleMultiProducerSending.parallelism;
         int n = roundToParallelism(handleMultiProducerSending.n, parallelism);
         ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, n));
         CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
