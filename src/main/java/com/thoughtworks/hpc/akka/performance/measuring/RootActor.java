@@ -38,6 +38,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandleSingleProducerSending implements Command {
+        private final int n;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -53,7 +59,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 .onMessage(HandleEnqueueing.class, this::onHandleEnqueueing)
                 .onMessage(HandleDequeueing.class, this::onHandleDequeueing)
                 .onMessage(HandleInitiation.class, this::onHandleInitiation)
+                .onMessage(HandleSingleProducerSending.class, this::onHandleSingleProducerSending)
                 .build();
+    }
+
+    private Behavior<Command> onHandleSingleProducerSending(HandleSingleProducerSending handleSingleProducerSending) throws InterruptedException {
+        CountDownLatch finishLatch = new CountDownLatch(1);
+        ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, handleSingleProducerSending.n));
+
+        long start = System.nanoTime();
+        CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
+        for (int i = 0; i < handleSingleProducerSending.n; i++) {
+            actor.tell(emptyMessage);
+        }
+        finishLatch.await();
+        long spentTime = System.nanoTime() - start;
+
+        System.out.println("Single-producer sending:");
+        System.out.printf("\t%d ops\n", handleSingleProducerSending.n);
+        System.out.printf("\t%d ns\n", spentTime);
+        System.out.printf("\t%d ops/s\n", handleSingleProducerSending.n * 1000_000_000L / spentTime);
+        handleSingleProducerSending.finish.countDown();
+        return this;
     }
 
     private Behavior<Command> onHandleInitiation(HandleInitiation handleInitiation) {

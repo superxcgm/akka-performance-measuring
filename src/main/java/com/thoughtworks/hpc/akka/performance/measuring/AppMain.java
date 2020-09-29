@@ -55,6 +55,12 @@ public class AppMain {
                     system.tell(new RootActor.HandleInitiation(n, finish));
                     finish.await();
                     break;
+                case "single-producer-sending":
+                    n = Integer.parseInt(args[1]);
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandleSingleProducerSending(n, finish));
+                    finish.await();
+                    break;
             }
         }
     }
