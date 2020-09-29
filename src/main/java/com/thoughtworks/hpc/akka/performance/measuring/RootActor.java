@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 
 public class RootActor extends AbstractBehavior<RootActor.Command> {
 
@@ -44,6 +46,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandleMultiProducerSending implements Command {
+        private final int n;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -59,8 +67,46 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 .onMessage(HandleEnqueueing.class, this::onHandleEnqueueing)
                 .onMessage(HandleDequeueing.class, this::onHandleDequeueing)
                 .onMessage(HandleInitiation.class, this::onHandleInitiation)
+                .onMessage(HandleMultiProducerSending.class, this::onHandleMultiProducerSending)
                 .onMessage(HandleSingleProducerSending.class, this::onHandleSingleProducerSending)
                 .build();
+    }
+
+    private Behavior<Command> onHandleMultiProducerSending(HandleMultiProducerSending handleMultiProducerSending) throws BrokenBarrierException, InterruptedException {
+        CountDownLatch finishLatch = new CountDownLatch(1);
+        ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, handleMultiProducerSending.n));
+
+        int parallelism = 10;
+        CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
+        List<Thread> threads = new ArrayList<>(parallelism);
+        for (int i = 0; i < parallelism; i++) {
+            Thread thread = new Thread(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    logger.error(e.toString());
+                }
+                int messageCount = handleMultiProducerSending.n / parallelism;
+                CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
+                for(int i1 = 0; i1 < messageCount; i1++) {
+                    actor.tell(emptyMessage);
+                }
+            });
+            thread.start();
+            threads.add(thread);
+        }
+
+        long start = System.nanoTime();
+        barrier.await();
+        finishLatch.await();
+        long spentTime = System.nanoTime() - start;
+
+        System.out.println("Multi-producer sending:");
+        System.out.printf("\t%d ops\n", handleMultiProducerSending.n);
+        System.out.printf("\t%d ns\n", spentTime);
+        System.out.printf("\t%d ops/s\n", handleMultiProducerSending.n * 1000_000_000L / spentTime);
+        handleMultiProducerSending.finish.countDown();
+        return this;
     }
 
     private Behavior<Command> onHandleSingleProducerSending(HandleSingleProducerSending handleSingleProducerSending) throws InterruptedException {
