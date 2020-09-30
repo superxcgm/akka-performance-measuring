@@ -67,6 +67,13 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandlePingThroughput implements Command {
+        private final int n;
+        private final int pairCount;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -86,14 +93,47 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 .onMessage(HandleSingleProducerSending.class, this::onHandleSingleProducerSending)
                 .onMessage(HandleMaxThroughput.class, this::onHandleMaxThroughput)
                 .onMessage(HandlePingLatency.class, this::onHandlePingLatency)
+                .onMessage(HandlePingThroughput.class, this::onHandlePingThroughput)
                 .build();
     }
 
-    private Behavior<Command> onHandlePingLatency(HandlePingLatency handlePingLatency) {
-        int n = handlePingLatency.n;
-        if ((n & 1) == 1) {
-            n--;
+    private int roundToEven(int x) {
+        if ((x & 1) == 1) {
+            x--;
         }
+        return x;
+    }
+
+    private Behavior<Command> onHandlePingThroughput(HandlePingThroughput handlePingThroughput) {
+        int p = roundToEven(handlePingThroughput.pairCount);
+        int n = roundToParallelism(handlePingThroughput.n, p);
+        CountDownLatch finishLatch = new CountDownLatch(p * 2);
+        List<ActorRef<PingThroughputActor.Command>> actors = new ArrayList<>(p * 2);
+
+        for (int i = 0; i < p; i++) {
+            ActorRef<PingThroughputActor.Command> actor1 = getContext().spawnAnonymous(PingThroughputActor.create(finishLatch, n / p / 2));
+            ActorRef<PingThroughputActor.Command> actor2 = getContext().spawnAnonymous(PingThroughputActor.create(finishLatch, n / p / 2));
+            actors.add(actor1);
+            actors.add(actor2);
+        }
+
+        long start = System.nanoTime();
+        for (int i = 0; i < actors.size(); i += 2) {
+            actors.get(i).tell(new PingThroughputActor.PingThroughputMessage(actors.get(i + 1)));
+        }
+        finishLatch.countDown();
+        long spentTime = System.nanoTime() - start;
+
+        System.out.println("Ping throughput:");
+        System.out.printf("\t%d ops\n", n);
+        System.out.printf("\t%d ns\n", spentTime);
+        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+        handlePingThroughput.finish.countDown();
+        return this;
+    }
+
+    private Behavior<Command> onHandlePingLatency(HandlePingLatency handlePingLatency) {
+        int n = roundToEven(handlePingLatency.n);
         CountDownLatch finishLatch = new CountDownLatch(2);
         LatencyHistogram latencyHistogram = new LatencyHistogram();
 
