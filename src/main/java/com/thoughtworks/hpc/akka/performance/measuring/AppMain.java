@@ -6,8 +6,16 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 
 public class AppMain {
-    public static void main(String[] notUsed) throws InterruptedException {
+    public static void main(String[] cliArgs) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
+        boolean scriptMode = false;
+
+        for (String cliArg : cliArgs) {
+            if (cliArg.equals("--scriptMode")) {
+                scriptMode = true;
+                break;
+            }
+        }
 
         ActorSystem<RootActor.Command> system = ActorSystem.create(RootActor.create(), "akka-performance-measuring");
         int n;
@@ -15,7 +23,9 @@ public class AppMain {
         int parallelism;
 
         while (true) {
-            System.out.print("> ");
+            if (!scriptMode) {
+                System.out.print("> ");
+            }
             String line = scanner.nextLine().trim();
 
             String[] args = line.split(" ");

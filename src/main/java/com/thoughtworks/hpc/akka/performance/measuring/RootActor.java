@@ -126,6 +126,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
 
         System.out.println("Ping throughput:");
         System.out.printf("\t%d ops\n", n);
+        System.out.printf("\t%d pairs\n", p);
         System.out.printf("\t%d ns\n", spentTime);
         System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
         handlePingThroughput.finish.countDown();

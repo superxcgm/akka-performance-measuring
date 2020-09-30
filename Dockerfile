@@ -10,5 +10,6 @@ COPY docker ./
 
 RUN wget https://github.com/undera/perfmon-agent/releases/download/2.2.3/ServerAgent-2.2.3.zip
 RUN unzip ServerAgent-2.2.3.zip
+COPY test.in.txt ./
 
 CMD ["./agent.sh"]
