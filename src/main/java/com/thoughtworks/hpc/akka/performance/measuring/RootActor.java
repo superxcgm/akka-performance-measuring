@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -60,6 +61,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         private final CountDownLatch finish;
     }
 
+    @AllArgsConstructor
+    public static class HandlePingLatency implements Command {
+        private final int n;
+        private final CountDownLatch finish;
+    }
+
     private RootActor(ActorContext<Command> context) {
         super(context);
         logger = getContext().getLog();
@@ -78,7 +85,35 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 .onMessage(HandleMultiProducerSending.class, this::onHandleMultiProducerSending)
                 .onMessage(HandleSingleProducerSending.class, this::onHandleSingleProducerSending)
                 .onMessage(HandleMaxThroughput.class, this::onHandleMaxThroughput)
+                .onMessage(HandlePingLatency.class, this::onHandlePingLatency)
                 .build();
+    }
+
+    private Behavior<Command> onHandlePingLatency(HandlePingLatency handlePingLatency) {
+        int n = handlePingLatency.n;
+        if ((n & 1) == 1) {
+            n--;
+        }
+        CountDownLatch finishLatch = new CountDownLatch(2);
+        LatencyHistogram latencyHistogram = new LatencyHistogram();
+
+        ActorRef<PingLatencyActor.Command> actor1 = getContext().spawnAnonymous(PingLatencyActor.create(finishLatch, n / 2, latencyHistogram));
+        ActorRef<PingLatencyActor.Command> actor2 = getContext().spawnAnonymous(PingLatencyActor.create(finishLatch, n / 2, latencyHistogram));
+
+        long start = System.nanoTime();
+        actor1.tell(new PingLatencyActor.PingLatencyMessage(actor2));
+        finishLatch.countDown();
+        long spentTime = System.nanoTime() - start;
+
+        System.out.println("Ping latency:");
+        System.out.printf("\t%d ops\n", n);
+        System.out.printf("\t%d ns\n", spentTime);
+        Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 0.99999, 1.0).forEach(
+                x -> System.out.printf("\tp(%1.5f) = %8d ns/op\n", x, latencyHistogram.getValueAtPercentile(x * 100))
+        );
+
+        handlePingLatency.finish.countDown();
+        return this;
     }
 
     private Behavior<Command> onHandleMaxThroughput(HandleMaxThroughput handleMaxThroughput) throws BrokenBarrierException, InterruptedException {

@@ -83,6 +83,11 @@ public class AppMain {
                     finish = new CountDownLatch(1);
                     system.tell(new RootActor.HandleMaxThroughput(n, parallelism, finish));
                     finish.await();
+                case "ping-latency":
+                    n = Integer.parseInt(args[1]);
+                    finish = new CountDownLatch(1);
+                    system.tell(new RootActor.HandlePingLatency(n, finish));
+                    finish.await();
             }
         }
     }
