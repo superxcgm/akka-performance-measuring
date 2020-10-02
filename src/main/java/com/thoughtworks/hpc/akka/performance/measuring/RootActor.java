@@ -172,7 +172,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         System.out.println("Ping latency:");
         System.out.printf("\t%d ops\n", n);
         System.out.printf("\t%d ns\n", spentTime);
-        Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 0.99999, 1.0).forEach(
+        Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1.0).forEach(
                 x -> System.out.printf("\tp(%1.5f) = %8d ns/op\n", x, latencyHistogram.getValueAtPercentile(x * 100))
         );
 
