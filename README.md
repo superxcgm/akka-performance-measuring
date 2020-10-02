@@ -16,7 +16,7 @@
 #### Run with predefined test input
 
 ```shell script
-java -jar app.jar --scriptMode < test.in.tx
+java -jar app.jar --scriptMode < test.in.txt
 ```
 
 #### Run with REPL

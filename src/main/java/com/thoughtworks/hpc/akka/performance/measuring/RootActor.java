@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.function.Function;
 
 public class RootActor extends AbstractBehavior<RootActor.Command> {
 
@@ -118,6 +119,12 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         return x;
     }
 
+    private long timed(Function<Void, Void> f) {
+        long start = System.nanoTime();
+        f.apply(null);
+        return System.nanoTime() - start;
+    }
+
     private Behavior<Command> onHandlePingThroughput(HandlePingThroughput handlePingThroughput) {
         int p = roundToEven(handlePingThroughput.pairCount);
         int n = roundToParallelism(handlePingThroughput.n, p);
@@ -131,12 +138,13 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             actors.add(actor2);
         }
 
-        long start = System.nanoTime();
-        for (int i = 0; i < actors.size(); i += 2) {
-            actors.get(i).tell(new PingThroughputActor.PingThroughputMessage(actors.get(i + 1)));
-        }
-        finishLatch.countDown();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((Void) -> {
+            for (int i = 0; i < actors.size(); i += 2) {
+                actors.get(i).tell(new PingThroughputActor.PingThroughputMessage(actors.get(i + 1)));
+            }
+            finishLatch.countDown();
+            return null;
+        });
 
         System.out.println("Ping throughput:");
         System.out.printf("\t%d ops\n", n);
@@ -155,10 +163,11 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         ActorRef<PingLatencyActor.Command> actor1 = getContext().spawnAnonymous(PingLatencyActor.create(finishLatch, n / 2, latencyHistogram));
         ActorRef<PingLatencyActor.Command> actor2 = getContext().spawnAnonymous(PingLatencyActor.create(finishLatch, n / 2, latencyHistogram));
 
-        long start = System.nanoTime();
-        actor1.tell(new PingLatencyActor.PingLatencyMessage(actor2));
-        finishLatch.countDown();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            actor1.tell(new PingLatencyActor.PingLatencyMessage(actor2));
+            finishLatch.countDown();
+            return null;
+        });
 
         System.out.println("Ping latency:");
         System.out.printf("\t%d ops\n", n);
@@ -196,10 +205,15 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             threads.add(thread);
         }
 
-        long start = System.nanoTime();
-        barrier.await();
-        finishLatch.await();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            try {
+                barrier.await();
+                finishLatch.await();
+            } catch (Exception e) {
+                logger.error(e.toString());
+            }
+            return null;
+        });
 
         System.out.println("Max throughput:");
         System.out.printf("\t%d ops\n", n);
@@ -229,7 +243,7 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
                 }
                 int messageCount = n / parallelism;
                 CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
-                for (int i1 = 0; i1 < messageCount; i1++) {
+                for (int j = 0; j < messageCount; j++) {
                     actor.tell(emptyMessage);
                 }
             });
@@ -237,10 +251,15 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             threads.add(thread);
         }
 
-        long start = System.nanoTime();
-        barrier.await();
-        finishLatch.await();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            try {
+                barrier.await();
+                finishLatch.await();
+            } catch (Exception e) {
+                logger.error(e.toString());
+            }
+            return null;
+        });
 
         System.out.println("Multi-producer sending:");
         System.out.printf("\t%d ops\n", n);
@@ -254,13 +273,18 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         CountDownLatch finishLatch = new CountDownLatch(1);
         ActorRef<CountActor.Command> actor = getContext().spawnAnonymous(CountActor.create(finishLatch, handleSingleProducerSending.n));
 
-        long start = System.nanoTime();
-        CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
-        for (int i = 0; i < handleSingleProducerSending.n; i++) {
-            actor.tell(emptyMessage);
-        }
-        finishLatch.await();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            CountActor.EmptyMessage emptyMessage = new CountActor.EmptyMessage();
+            for (int i = 0; i < handleSingleProducerSending.n; i++) {
+                actor.tell(emptyMessage);
+            }
+            try {
+                finishLatch.await();
+            } catch (InterruptedException e) {
+                logger.error(e.toString());
+            }
+            return null;
+        });
 
         System.out.println("Single-producer sending:");
         System.out.printf("\t%d ops\n", handleSingleProducerSending.n);
@@ -273,12 +297,13 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
     private Behavior<Command> onHandleInitiation(HandleInitiation handleInitiation) {
         List<ActorRef<MinimalActor.Command>> actors = new ArrayList<>(handleInitiation.n);
 
-        long start = System.nanoTime();
-        for (int i = 0; i < handleInitiation.n; i++) {
-            ActorRef<MinimalActor.Command> actorRef = getContext().spawnAnonymous(MinimalActor.create());
-            actors.add(actorRef);
-        }
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            for (int i = 0; i < handleInitiation.n; i++) {
+                ActorRef<MinimalActor.Command> actorRef = getContext().spawnAnonymous(MinimalActor.create());
+                actors.add(actorRef);
+            }
+            return null;
+        });
 
         // tear down
         for (ActorRef<MinimalActor.Command> actor : actors) {
@@ -303,10 +328,15 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             actor.tell(message);
         }
 
-        long start = System.nanoTime();
-        startLatch.countDown();
-        finishLatch.await();
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            startLatch.countDown();
+            try {
+                finishLatch.await();
+            } catch (InterruptedException e) {
+                logger.error(e.toString());
+            }
+            return null;
+        });
 
         System.out.println("Dequeueing:");
         System.out.printf("\t%d ops\n", handleDequeueing.n);
@@ -321,12 +351,13 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         CountDownLatch finishLatch = new CountDownLatch(1);
         ActorRef<BlockableCountActor.Command> actor = getContext().spawnAnonymous(BlockableCountActor.create(startLatch, finishLatch, handleEnqueueing.n));
 
-        long start = System.nanoTime();
-        BlockableCountActor.EmptyMessage message = new BlockableCountActor.EmptyMessage();
-        for (int i = 0; i < handleEnqueueing.n; i++) {
-            actor.tell(message);
-        }
-        long spentTime = System.nanoTime() - start;
+        long spentTime = timed((notUsed) -> {
+            BlockableCountActor.EmptyMessage message = new BlockableCountActor.EmptyMessage();
+            for (int i = 0; i < handleEnqueueing.n; i++) {
+                actor.tell(message);
+            }
+            return null;
+        });
 
         startLatch.countDown();
         finishLatch.await();
