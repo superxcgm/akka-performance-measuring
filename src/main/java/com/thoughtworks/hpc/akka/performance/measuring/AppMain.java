@@ -1,11 +1,17 @@
 package com.thoughtworks.hpc.akka.performance.measuring;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 
 import java.util.Scanner;
-import java.util.concurrent.CountDownLatch;
 
 public class AppMain {
+
+    private static void tellSync(ActorRef<RootActor.Command> rootActor, RootActor.Command command) throws InterruptedException {
+        rootActor.tell(command);
+        command.finish.await();
+    }
+
     public static void main(String[] cliArgs) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
         boolean scriptMode = false;
@@ -19,7 +25,6 @@ public class AppMain {
 
         ActorSystem<RootActor.Command> system = ActorSystem.create(RootActor.create(), "akka-performance-measuring");
         int n;
-        CountDownLatch finish;
         int parallelism;
 
         while (true) {
@@ -49,28 +54,20 @@ public class AppMain {
                     // enqueueing n
                     n = Integer.parseInt(args[1]);
 
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleEnqueueing(n, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleEnqueueing(n));
                     break;
                 case "dequeueing":
                     // enqueueing n
                     n = Integer.parseInt(args[1]);
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleDequeueing(n, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleDequeueing(n));
                     break;
                 case "initiation":
                     n = Integer.parseInt(args[1]);
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleInitiation(n, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleInitiation(n));
                     break;
                 case "single-producer-sending":
                     n = Integer.parseInt(args[1]);
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleSingleProducerSending(n, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleSingleProducerSending(n));
                     break;
                 case "multi-producer-sending":
                     // multi-producer-sending n [p]
@@ -79,9 +76,7 @@ public class AppMain {
                     if (args.length > 2) {
                         parallelism = Integer.parseInt(args[2]);
                     }
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleMultiProducerSending(n, parallelism, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleMultiProducerSending(n, parallelism));
                     break;
                 case "max-throughput":
                     // max-throughput n [p]
@@ -90,22 +85,16 @@ public class AppMain {
                     if (args.length > 2) {
                         parallelism = Integer.parseInt(args[2]);
                     }
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandleMaxThroughput(n, parallelism, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandleMaxThroughput(n, parallelism));
                     break;
                 case "ping-latency":
                     n = Integer.parseInt(args[1]);
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandlePingLatency(n, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandlePingLatency(n));
                     break;
                 case "ping-throughput-10k":
                     n = Integer.parseInt(args[1]);
                     int pairCount = 10_000;
-                    finish = new CountDownLatch(1);
-                    system.tell(new RootActor.HandlePingThroughput(n, pairCount, finish));
-                    finish.await();
+                    tellSync(system, new RootActor.HandlePingThroughput(n, pairCount));
                     break;
             }
         }

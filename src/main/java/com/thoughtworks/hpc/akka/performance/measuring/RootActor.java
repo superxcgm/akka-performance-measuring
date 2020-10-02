@@ -6,7 +6,6 @@ import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
-import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -20,42 +19,47 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
 
     private final Logger logger;
 
-    @AllArgsConstructor
     public static abstract class Command {
         final int n;
         final CountDownLatch finish;
+
+
+        protected Command(int n) {
+            this.n = n;
+            finish = new CountDownLatch(1);
+        }
     }
 
     public static class HandleEnqueueing extends Command {
-        public HandleEnqueueing(int n, CountDownLatch finish) {
-            super(n, finish);
+        public HandleEnqueueing(int n) {
+            super(n);
         }
     }
 
 
     public static class HandleDequeueing extends Command {
-        public HandleDequeueing(int n, CountDownLatch finish) {
-            super(n, finish);
+        public HandleDequeueing(int n) {
+            super(n);
         }
     }
 
     public static class HandleInitiation extends Command {
-        public HandleInitiation(int n, CountDownLatch finish) {
-            super(n, finish);
+        public HandleInitiation(int n) {
+            super(n);
         }
     }
 
     public static class HandleSingleProducerSending extends Command {
-        public HandleSingleProducerSending(int n, CountDownLatch finish) {
-            super(n, finish);
+        public HandleSingleProducerSending(int n) {
+            super(n);
         }
     }
 
     public static class HandleMultiProducerSending extends Command {
         private final int parallelism;
 
-        public HandleMultiProducerSending(int n, int parallelism, CountDownLatch finish) {
-            super(n, finish);
+        public HandleMultiProducerSending(int n, int parallelism) {
+            super(n);
             this.parallelism = parallelism;
         }
     }
@@ -63,23 +67,23 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
     public static class HandleMaxThroughput extends Command {
         private final int parallelism;
 
-        public HandleMaxThroughput(int n, int parallelism, CountDownLatch finish) {
-            super(n, finish);
+        public HandleMaxThroughput(int n, int parallelism) {
+            super(n);
             this.parallelism = parallelism;
         }
     }
 
     public static class HandlePingLatency extends Command {
-        public HandlePingLatency(int n, CountDownLatch finish) {
-            super(n, finish);
+        public HandlePingLatency(int n) {
+            super(n);
         }
     }
 
     public static class HandlePingThroughput extends Command {
         private final int pairCount;
 
-        public HandlePingThroughput(int n, int pairCount, CountDownLatch finish) {
-            super(n, finish);
+        public HandlePingThroughput(int n, int pairCount) {
+            super(n);
             this.pairCount = pairCount;
         }
     }
