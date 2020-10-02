@@ -20,58 +20,68 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
 
     private final Logger logger;
 
-    public interface Command {
+    @AllArgsConstructor
+    public static abstract class Command {
+        final int n;
+        final CountDownLatch finish;
     }
 
-    @AllArgsConstructor
-    public static class HandleEnqueueing implements Command {
-        private final int n;
-        private final CountDownLatch finish;
+    public static class HandleEnqueueing extends Command {
+        public HandleEnqueueing(int n, CountDownLatch finish) {
+            super(n, finish);
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandleDequeueing implements Command {
-        private final int n;
-        private final CountDownLatch finish;
+
+    public static class HandleDequeueing extends Command {
+        public HandleDequeueing(int n, CountDownLatch finish) {
+            super(n, finish);
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandleInitiation implements Command {
-        private final int n;
-        private final CountDownLatch finish;
+    public static class HandleInitiation extends Command {
+        public HandleInitiation(int n, CountDownLatch finish) {
+            super(n, finish);
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandleSingleProducerSending implements Command {
-        private final int n;
-        private final CountDownLatch finish;
+    public static class HandleSingleProducerSending extends Command {
+        public HandleSingleProducerSending(int n, CountDownLatch finish) {
+            super(n, finish);
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandleMultiProducerSending implements Command {
-        private final int n;
+    public static class HandleMultiProducerSending extends Command {
         private final int parallelism;
-        private final CountDownLatch finish;
+
+        public HandleMultiProducerSending(int n, int parallelism, CountDownLatch finish) {
+            super(n, finish);
+            this.parallelism = parallelism;
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandleMaxThroughput implements Command {
-        private final int n;
+    public static class HandleMaxThroughput extends Command {
         private final int parallelism;
-        private final CountDownLatch finish;
+
+        public HandleMaxThroughput(int n, int parallelism, CountDownLatch finish) {
+            super(n, finish);
+            this.parallelism = parallelism;
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandlePingLatency implements Command {
-        private final int n;
-        private final CountDownLatch finish;
+    public static class HandlePingLatency extends Command {
+        public HandlePingLatency(int n, CountDownLatch finish) {
+            super(n, finish);
+        }
     }
 
-    @AllArgsConstructor
-    public static class HandlePingThroughput implements Command {
-        private final int n;
+    public static class HandlePingThroughput extends Command {
         private final int pairCount;
-        private final CountDownLatch finish;
+
+        public HandlePingThroughput(int n, int pairCount, CountDownLatch finish) {
+            super(n, finish);
+            this.pairCount = pairCount;
+        }
     }
 
     private RootActor(ActorContext<Command> context) {
