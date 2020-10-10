@@ -142,7 +142,11 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             for (int i = 0; i < actors.size(); i += 2) {
                 actors.get(i).tell(new PingThroughputActor.PingThroughputMessage(actors.get(i + 1)));
             }
-            finishLatch.countDown();
+            try {
+                finishLatch.await();
+            } catch (InterruptedException e) {
+                logger.error(e.toString());
+            }
             return null;
         });
 
