@@ -169,7 +169,11 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
 
         long spentTime = timed((notUsed) -> {
             actor1.tell(new PingLatencyActor.PingLatencyMessage(actor2));
-            finishLatch.countDown();
+            try {
+                finishLatch.await();
+            } catch (InterruptedException e) {
+                logger.error(e.toString());
+            }
             return null;
         });
 
