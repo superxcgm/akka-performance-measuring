@@ -2,7 +2,23 @@ enqueueing 10000000
 dequeueing 10000000
 initiation 100000
 single-producer-sending 6000000
-multi-producer sending 6000000
+multi-producer-sending 6000000
+max-throughput 12000000
+ping-latency 1500000
+ping-throughput-10k 2000000
+enqueueing 10000000
+dequeueing 10000000
+initiation 100000
+single-producer-sending 6000000
+multi-producer-sending 6000000
+max-throughput 12000000
+ping-latency 1500000
+ping-throughput-10k 2000000
+enqueueing 10000000
+dequeueing 10000000
+initiation 100000
+single-producer-sending 6000000
+multi-producer-sending 6000000
 max-throughput 12000000
 ping-latency 1500000
 ping-throughput-10k 2000000

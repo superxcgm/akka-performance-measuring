@@ -32,9 +32,10 @@ do
 		ops_per_second=`echo $LINE | sed 's@[ns]@@g' | sed 's@[[:space:]]@@g'`
 		ping_lantency_avg=`expr ${ping_lantency_avg} + ${ops_per_second}`
 		let ping_lantency_count++
-		for (( i = 0; i < 7; i++ ));
-		do
+		i=0
+		while [ "$i" -lt 7 ]; do
 			read LINE
+			i=$(( i + 1 ))
 		done
 		continue
 	else
