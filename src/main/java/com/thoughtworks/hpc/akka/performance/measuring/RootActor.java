@@ -8,6 +8,10 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import org.slf4j.Logger;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -150,12 +154,27 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Ping throughput:");
-        System.out.printf("\t%d ops\n", n);
-        System.out.printf("\t%d pairs\n", p);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+//        System.out.println("Ping throughput:");
+//        System.out.printf("\t%d ops\n", n);
+//        System.out.printf("\t%d pairs\n", p);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+        String result = String.format("Ping throughput:\n\t%d ops\n\t%d pairs\n\t%d ns\n\t%d ops/s\n", n, p, spentTime, n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handlePingThroughput.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -177,14 +196,33 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Ping latency:");
-        System.out.printf("\t%d ops\n", n);
-        System.out.printf("\t%d ns\n", spentTime);
-        Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1.0).forEach(
-                x -> System.out.printf("\tp(%1.5f) = %8d ns/op\n", x, latencyHistogram.getValueAtPercentile(x * 100))
-        );
+        List<Double> percentileList = Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1.0);
+        StringBuilder result = new StringBuilder(String.format("Ping latency:\n\t%d ops\n\t%d ns\n", n, spentTime));
+        for (Double x: percentileList){
+            result.append(String.format("\tp(%1.5f) = %8d ns/op\n", x, latencyHistogram.getValueAtPercentile(x * 100)));
+        }
+//        System.out.println("Ping latency:");
+//        System.out.printf("\t%d ops\n", n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        Arrays.asList(0.0, 0.5, 0.9, 0.99, 0.999, 0.9999, 1.0).forEach(
+//                x -> System.out.printf("\tp(%1.5f) = %8d ns/op\n", x, latencyHistogram.getValueAtPercentile(x * 100))
+//        );
+
+        System.out.println(result);
 
         handlePingLatency.finish.countDown();
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result.toString());
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -223,11 +261,27 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Max throughput:");
-        System.out.printf("\t%d ops\n", n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+//        System.out.println("Max throughput:");
+//        System.out.printf("\t%d ops\n", n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+//        handleMaxThroughput.finish.countDown();
+        String result = String.format("Max throughput:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", n, spentTime, n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleMaxThroughput.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -269,11 +323,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Multi-producer sending:");
-        System.out.printf("\t%d ops\n", n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+//        System.out.println("Multi-producer sending:");
+//        System.out.printf("\t%d ops\n", n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", n * 1000_000_000L / spentTime);
+//        handleMultiProducerSending.finish.countDown();
+
+        String result = String.format("Multi-producer sending:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", n, spentTime, n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleMultiProducerSending.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -294,11 +365,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Single-producer sending:");
-        System.out.printf("\t%d ops\n", handleSingleProducerSending.n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", handleSingleProducerSending.n * 1000_000_000L / spentTime);
+//        System.out.println("Single-producer sending:");
+//        System.out.printf("\t%d ops\n", handleSingleProducerSending.n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", handleSingleProducerSending.n * 1000_000_000L / spentTime);
+//        handleSingleProducerSending.finish.countDown();
+
+        String result = String.format("Single-producer sending:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", handleSingleProducerSending.n, spentTime, handleSingleProducerSending.n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleSingleProducerSending.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -318,11 +406,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             getContext().stop(actor);
         }
 
-        System.out.println("Initiation:");
-        System.out.printf("\t%d ops\n", handleInitiation.n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", handleInitiation.n * 1000_000_000L / spentTime);
+//        System.out.println("Initiation:");
+//        System.out.printf("\t%d ops\n", handleInitiation.n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", handleInitiation.n * 1000_000_000L / spentTime);
+//        handleInitiation.finish.countDown();
+
+        String result = String.format("Initiation:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", handleInitiation.n, spentTime, handleInitiation.n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleInitiation.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -346,11 +451,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
             return null;
         });
 
-        System.out.println("Dequeueing:");
-        System.out.printf("\t%d ops\n", handleDequeueing.n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", handleDequeueing.n * 1000_000_000L / spentTime);
+//        System.out.println("Dequeueing:");
+//        System.out.printf("\t%d ops\n", handleDequeueing.n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", handleDequeueing.n * 1000_000_000L / spentTime);
+//        handleDequeueing.finish.countDown();
+
+        String result = String.format("Dequeueing:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", handleDequeueing.n, spentTime, handleDequeueing.n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleDequeueing.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
@@ -370,11 +492,28 @@ public class RootActor extends AbstractBehavior<RootActor.Command> {
         startLatch.countDown();
         finishLatch.await();
 
-        System.out.println("Enqueueing:");
-        System.out.printf("\t%d ops\n", handleEnqueueing.n);
-        System.out.printf("\t%d ns\n", spentTime);
-        System.out.printf("\t%d ops/s\n", handleEnqueueing.n * 1000_000_000L / spentTime);
+//        System.out.println("Enqueueing:");
+//        System.out.printf("\t%d ops\n", handleEnqueueing.n);
+//        System.out.printf("\t%d ns\n", spentTime);
+//        System.out.printf("\t%d ops/s\n", handleEnqueueing.n * 1000_000_000L / spentTime);
+//        handleEnqueueing.finish.countDown();
+
+        String result = String.format("Enqueueing:\n\t%d ops\n\t%d ns\n\t%d ops/s\n", handleEnqueueing.n, spentTime, handleEnqueueing.n * 1000_000_000L / spentTime);
+        System.out.println(result);
         handleEnqueueing.finish.countDown();
+
+        try {
+            File file =new File("out.txt");
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileWriter fileWritter = new FileWriter(file.getName(),true);
+            BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
+            bufferWritter.write(result);
+            bufferWritter.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
+        }
         return this;
     }
 
